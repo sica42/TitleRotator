@@ -1,7 +1,7 @@
 ## Interface: 11200
 ## Title: TitleRotator
 ## Author: sica
-## Version: 1.0
+## Version: 1.1
 ## Notes: Automatically change your title every few seconds
 ## SavedVariablesPerCharacter: TitleRotatorOptions
 

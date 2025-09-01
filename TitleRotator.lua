@@ -66,7 +66,7 @@ function TitleRotator.events.PLAYER_LOGIN()
 				if orig_list_hide then
 					orig_list_hide()
 				end
-				m.enabled = m.db.enabled
+				m.raid_check()
 			end )
 		end
 	end
@@ -87,7 +87,7 @@ function TitleRotator.events.PLAYER_LOGIN()
 			orig_doll_hide()
 		end
 
-		m.enabled = m.db.enabled
+		m.raid_check()
 		m.hide()
 	end )
 
@@ -139,10 +139,14 @@ function TitleRotator.events.PARTY_MEMBERS_CHANGED()
 	m.raid_check()
 end
 
+function TitleRotator.events.RAID_ROSTER_UPDATE()
+	m.raid_check()
+end
+
 function TitleRotator.raid_check()
 	if m.db.enabled and m.db.raid_disable then
 		if GetNumRaidMembers() > 0 then
-			m.enabled = false
+			m.disable_rotate()
 			return
 		end
 	end
@@ -175,7 +179,9 @@ end
 
 ---@param titleID integer
 function TitleRotator.set_title( titleID )
-	SendAddonMessage( "TW_TITLES", "ChangeTitle:" .. titleID, "GUILD" )
+	if m.enabled then
+		SendAddonMessage( "TW_TITLES", "ChangeTitle:" .. titleID, "GUILD" )
+	end
 end
 
 ---@param index integer
@@ -404,11 +410,11 @@ function TitleRotator.toggle()
 end
 
 function TitleRotator.disable_rotate()
-	m.enabled = false
 	if getn( m.db.titles ) > 0 then
 		m.current_title = 1
 		m.set_title( m.db.titles[ m.current_title ].id )
 	end
+	m.enabled = false
 end
 
 ---@param message string
