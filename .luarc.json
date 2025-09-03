@@ -9,8 +9,7 @@
     "this",
     "GameFontNormal",
     "GameFontNormalSmall",
-    "PaperDollFrame",
-    "UIDROPDOWNMENU_MAXLEVELS"
+    "PaperDollFrame"
   ],
   "Lua.runtime.version": "Lua 5.1",
   "Lua.workspace.checkThirdParty": false,

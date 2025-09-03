@@ -50,43 +50,19 @@ function TitleRotator.events.PLAYER_LOGIN()
 		m.btn:Disable()
 	end
 
-	-- Disable when dropdowns are open
-	for i = 1, UIDROPDOWNMENU_MAXLEVELS or 3 do
-		local list = m.api[ "DropDownList" .. i ]
-		if list then
-			local orig_list_show = list:GetScript( "OnShow" )
-			list:SetScript( "OnShow", function()
-				if orig_list_show then
-					orig_list_show()
-				end
-				m.disable_rotate()
-			end )
-			local orig_list_hide = list:GetScript( "OnHide" )
-			list:SetScript( "OnHide", function()
-				if orig_list_hide then
-					orig_list_hide()
-				end
-				m.raid_check()
-			end )
-		end
-	end
-
-	-- Disable when papgerdoll is open
+	-- Disable when paperdoll is open
 	local orig_doll_show = m.api.PaperDollFrame:GetScript( "OnShow" )
 	m.api.PaperDollFrame:SetScript( "OnShow", function()
-		if orig_doll_show then
-			orig_doll_show()
-		end
-
 		m.disable_rotate()
+		-- Ensure PaperDollFrame always have the right active title
+		SendAddonMessage("TW_TITLES", "Titles:List", "GUILD")
+		if orig_doll_show then orig_doll_show()	end
 	end )
 
+	-- Enable when paperdoll is closed
 	local orig_doll_hide = m.api.PaperDollFrame:GetScript( "OnHide" )
 	m.api.PaperDollFrame:SetScript( "OnHide", function()
-		if orig_doll_hide then
-			orig_doll_hide()
-		end
-
+		if orig_doll_hide then orig_doll_hide()	end
 		m.raid_check()
 		m.hide()
 	end )
@@ -154,6 +130,22 @@ function TitleRotator.raid_check()
 	m.enabled = m.db.enabled
 end
 
+function TitleRotator.disable_rotate()
+	if getn( m.db.titles ) > 0 then
+		m.current_title = 1
+		m.set_title( m.db.titles[ m.current_title ].id )
+	end
+	m.enabled = false
+end
+
+
+---@param titleID integer
+function TitleRotator.set_title( titleID )
+	if m.enabled then
+		SendAddonMessage( "TW_TITLES", "ChangeTitle:" .. titleID, "GUILD" )
+	end
+end
+
 function TitleRotator.on_update()
 	if m.enabled and m.db.titles and getn( m.db.titles ) > 1 then
 		m.timeSinceLast = (m.timeSinceLast or 0) + arg1
@@ -174,13 +166,6 @@ function TitleRotator.on_update()
 
 			m.set_title( m.db.titles[ m.current_title ].id )
 		end
-	end
-end
-
----@param titleID integer
-function TitleRotator.set_title( titleID )
-	if m.enabled then
-		SendAddonMessage( "TW_TITLES", "ChangeTitle:" .. titleID, "GUILD" )
 	end
 end
 
@@ -345,7 +330,6 @@ function TitleRotator.create_frame()
 
 	cb_enabled:SetScript( "OnClick", function()
 		m.db.enabled = cb_enabled:GetChecked() and true or false
-		m.enabled = m.db.enabled
 
 		if m.db.enabled then
 			cb_raid:Enable()
@@ -407,14 +391,6 @@ function TitleRotator.toggle()
 	else
 		m.show()
 	end
-end
-
-function TitleRotator.disable_rotate()
-	if getn( m.db.titles ) > 0 then
-		m.current_title = 1
-		m.set_title( m.db.titles[ m.current_title ].id )
-	end
-	m.enabled = false
 end
 
 ---@param message string
@@ -480,3 +456,26 @@ function TitleRotator.explode( str, delimiter )
 end
 
 TitleRotator:init()
+
+-- Stop TitlesDropDown_Initialize from being run each time title changes
+local orig_PaperDollFrame_OnEvent = PaperDollFrame_OnEvent
+local first_run = true
+function PaperDollFrame_OnEvent( event, unit )
+	if (event == "CHAT_MSG_ADDON" and arg1 == "TWT_TITLES") then
+		if not m.api.PaperDollFrame:IsVisible() and m.enabled then
+			local _, _, titleID = string.find( arg2, "newTitle:(%d+)" )
+
+			-- Make sure dropdown data gets populated on first response
+			-- Make sure original event is run on new titles
+			if first_run or titleID then
+				first_run = false
+			else
+				arg1 = ""
+			end
+		end
+	end
+
+	if orig_PaperDollFrame_OnEvent then
+		orig_PaperDollFrame_OnEvent( event, unit )
+	end
+end
