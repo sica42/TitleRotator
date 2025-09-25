@@ -27,7 +27,7 @@ function TitleRotator.events.PLAYER_LOGIN()
 	TitleRotatorOptions = TitleRotatorOptions or {}
 	m.db = TitleRotatorOptions
 	m.db.enabled = m.db.enabled or false
-	m.db.raid_disable = m.db.raid_disable or true
+	if m.db.raid_disable == nil then m.db.raid_disable = true end
 	m.db.titles = m.db.titles or {}
 	m.db.delay = m.db.delay or 2
 
